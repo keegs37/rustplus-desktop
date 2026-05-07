@@ -54,6 +54,87 @@ public sealed class RustMapData
     public string? WipeId { get; init; }
     public DateTime GeneratedAt { get; init; } = DateTime.UtcNow;
     public IReadOnlyList<MapMonument> Monuments { get; init; } = Array.Empty<MapMonument>();
+    public RustMapTerrainData? TerrainData { get; init; }
+}
+
+public sealed class RustMapTerrainData
+{
+    public MapRasterMetadata Metadata { get; init; } = new();
+    public HeightMapRaster? HeightMap { get; init; }
+    public TopologyRaster? Topology { get; init; }
+    public BiomeRaster? Biomes { get; init; }
+    public MaskRaster? OceanMask { get; init; }
+    public MaskRaster? DeepWaterMask { get; init; }
+    public MaskRaster? RiverMask { get; init; }
+    public MaskRaster? LakeMask { get; init; }
+    public MaskRaster? RoadMask { get; init; }
+    public MaskRaster? RailMask { get; init; }
+    public MaskRaster? NoBuildMask { get; init; }
+    public MaskRaster? MonumentBlockMask { get; init; }
+
+    public bool HasHeightLayer => HeightMap?.HasData == true;
+    public bool HasTopologyLayer => Topology?.HasData == true;
+    public bool HasBiomeLayer => Biomes?.HasData == true;
+    public bool HasBlockingLayers => HasTopologyLayer || OceanMask?.HasData == true || DeepWaterMask?.HasData == true ||
+                                     RiverMask?.HasData == true || LakeMask?.HasData == true || RoadMask?.HasData == true ||
+                                     RailMask?.HasData == true || NoBuildMask?.HasData == true || MonumentBlockMask?.HasData == true;
+    public bool HasAnyTerrainLayer => HasHeightLayer || HasTopologyLayer || HasBiomeLayer || HasBlockingLayers;
+}
+
+public sealed class MapRasterMetadata
+{
+    public int Width { get; init; }
+    public int Height { get; init; }
+    public double WorldMinX { get; init; }
+    public double WorldMinZ { get; init; }
+    public double WorldMaxX { get; init; }
+    public double WorldMaxZ { get; init; }
+    public bool OriginAtTopLeft { get; init; } = true;
+}
+
+public abstract class MapRasterLayer
+{
+    public int Width { get; init; }
+    public int Height { get; init; }
+    public bool HasData => Width > 0 && Height > 0;
+}
+
+public sealed class HeightMapRaster : MapRasterLayer
+{
+    public IReadOnlyList<double> HeightMeters { get; init; } = Array.Empty<double>();
+}
+
+public sealed class TopologyRaster : MapRasterLayer
+{
+    public IReadOnlyList<int> Flags { get; init; } = Array.Empty<int>();
+    public IReadOnlyDictionary<int, string> FlagNames { get; init; } = new Dictionary<int, string>();
+}
+
+public sealed class BiomeRaster : MapRasterLayer
+{
+    public IReadOnlyList<string> Biomes { get; init; } = Array.Empty<string>();
+}
+
+public sealed class MaskRaster : MapRasterLayer
+{
+    public IReadOnlyList<bool> Mask { get; init; } = Array.Empty<bool>();
+}
+
+[Flags]
+public enum KnownTopologyFlags
+{
+    None = 0,
+    Field = 1 << 0,
+    Forest = 1 << 1,
+    Ocean = 1 << 2,
+    DeepWater = 1 << 3,
+    River = 1 << 4,
+    Lake = 1 << 5,
+    Road = 1 << 6,
+    Rail = 1 << 7,
+    NoBuild = 1 << 8,
+    MonumentBlocked = 1 << 9,
+    Cliff = 1 << 10
 }
 
 public sealed class MapMonument
@@ -96,9 +177,18 @@ public sealed class TerrainSummary
 {
     public double AverageSlopeDegrees { get; init; }
     public double MaxHeightDeltaMeters { get; init; }
-    public string Biome { get; init; } = "temperate";
+    public string Biome { get; init; } = "unknown";
     public IReadOnlyList<string> TopologyFlags { get; init; } = Array.Empty<string>();
     public bool IsBuildBlocked { get; init; }
+    public bool HasHeightData { get; init; }
+    public bool HasTopologyData { get; init; }
+    public bool HasBiomeData { get; init; }
+    public bool HasBlockingData { get; init; }
+    public double BuildableSampleRatio { get; init; }
+    public int BuildableSampleCount { get; init; }
+    public int TotalSampleCount { get; init; }
+    public string DataQuality { get; init; } = "terrain_unknown";
+    public IReadOnlyList<string> MissingLayers { get; init; } = Array.Empty<string>();
 }
 
 public sealed class BuildSpotScores
@@ -161,6 +251,7 @@ public sealed class BuildSpotRecommendation
     public string ModeFit { get; init; } = string.Empty;
     public double OverallScore { get; init; }
     public BuildSpotScores Scores { get; init; } = new();
+    public TerrainSummary Terrain { get; init; } = new();
     public PuzzleAccessScore PuzzleAccess { get; init; } = new();
     public IReadOnlyList<NearbyMonument> NearbyMonuments { get; init; } = Array.Empty<NearbyMonument>();
     public IReadOnlyList<string> Pros { get; init; } = Array.Empty<string>();

@@ -2204,7 +2204,7 @@ Click="BtnToggleMiniMap_Click"/>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
-                                    <TextBlock Text="Build Spot Advisor uses static map data, selected preferences, and optional app-owned signals only. It does not read game memory, detect enemy players, or reveal hidden bases." Foreground="{DynamicResource TextSubtle}" FontSize="10" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                    <TextBlock Text="Build Spot Advisor uses provider terrain/topology layers when available; if height or blocking data is missing it marks terrain confidence as limited instead of inventing terrain facts. It uses static map data, selected preferences, and optional app-owned signals only. It does not read game memory, detect enemy players, or reveal hidden bases." Foreground="{DynamicResource TextSubtle}" FontSize="10" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </ScrollViewer>
                         </Grid>
