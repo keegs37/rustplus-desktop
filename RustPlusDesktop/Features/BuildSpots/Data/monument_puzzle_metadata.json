@@ -1,0 +1,223 @@
+{
+  "version": "2026.05-mvp",
+  "monuments": [
+    {
+      "name": "Oxum's Gas Station",
+      "aliases": ["Gas Station", "Oxum"],
+      "tier": "low",
+      "hasRecycler": true,
+      "hasRefinery": false,
+      "hasResearchTable": false,
+      "lootValue": 35,
+      "trafficRisk": 45,
+      "puzzle": {
+        "isGreenCardSource": true,
+        "isBlueCardSource": false,
+        "isRedCardSource": false,
+        "requiresGreenCard": false,
+        "requiresBlueCard": false,
+        "requiresRedCard": false,
+        "estimatedPuzzleValue": 25
+      },
+      "idealDistanceByMode": {
+        "solo_stealth": [700, 1300],
+        "duo_balanced": [400, 900],
+        "starter_base": [500, 1200],
+        "farm_base": [900, 1800],
+        "monument_rush": [150, 600],
+        "clan_high_traffic": [250, 800],
+        "low_pop_hidden": [1200, 2200]
+      }
+    },
+    {
+      "name": "Supermarket",
+      "aliases": ["Market", "Abandoned Supermarket"],
+      "tier": "low",
+      "hasRecycler": true,
+      "hasRefinery": false,
+      "hasResearchTable": false,
+      "lootValue": 36,
+      "trafficRisk": 46,
+      "puzzle": {
+        "isGreenCardSource": true,
+        "isBlueCardSource": false,
+        "isRedCardSource": false,
+        "requiresGreenCard": false,
+        "requiresBlueCard": false,
+        "requiresRedCard": false,
+        "estimatedPuzzleValue": 25
+      }
+    },
+    {
+      "name": "Harbor",
+      "aliases": ["Harbour", "Small Harbor", "Large Harbor"],
+      "tier": "low_medium",
+      "hasRecycler": true,
+      "hasRefinery": true,
+      "hasResearchTable": false,
+      "lootValue": 52,
+      "trafficRisk": 55,
+      "puzzle": {
+        "isGreenCardSource": false,
+        "isBlueCardSource": true,
+        "isRedCardSource": false,
+        "requiresGreenCard": true,
+        "requiresBlueCard": false,
+        "requiresRedCard": false,
+        "estimatedPuzzleValue": 55
+      }
+    },
+    {
+      "name": "Satellite Dish",
+      "aliases": ["Satellite"],
+      "tier": "low_medium",
+      "hasRecycler": true,
+      "hasRefinery": false,
+      "hasResearchTable": true,
+      "lootValue": 48,
+      "trafficRisk": 52,
+      "puzzle": {
+        "isGreenCardSource": false,
+        "isBlueCardSource": true,
+        "isRedCardSource": false,
+        "requiresGreenCard": true,
+        "requiresBlueCard": false,
+        "requiresRedCard": false,
+        "estimatedPuzzleValue": 52
+      }
+    },
+    {
+      "name": "Sewer Branch",
+      "aliases": ["Sewer"],
+      "tier": "medium",
+      "hasRecycler": true,
+      "hasRefinery": false,
+      "hasResearchTable": false,
+      "lootValue": 58,
+      "trafficRisk": 60,
+      "puzzle": {
+        "isGreenCardSource": false,
+        "isBlueCardSource": true,
+        "isRedCardSource": false,
+        "requiresGreenCard": true,
+        "requiresBlueCard": false,
+        "requiresRedCard": false,
+        "estimatedPuzzleValue": 58
+      }
+    },
+    {
+      "name": "Train Yard",
+      "aliases": ["Trainyard"],
+      "tier": "medium_high",
+      "hasRecycler": true,
+      "hasRefinery": false,
+      "hasResearchTable": true,
+      "lootValue": 82,
+      "trafficRisk": 80,
+      "puzzle": {
+        "isGreenCardSource": false,
+        "isBlueCardSource": false,
+        "isRedCardSource": true,
+        "requiresGreenCard": false,
+        "requiresBlueCard": true,
+        "requiresRedCard": false,
+        "estimatedPuzzleValue": 82
+      }
+    },
+    {
+      "name": "Water Treatment Plant",
+      "aliases": ["Water Treatment", "Water"],
+      "tier": "medium_high",
+      "hasRecycler": true,
+      "hasRefinery": false,
+      "hasResearchTable": true,
+      "lootValue": 76,
+      "trafficRisk": 74,
+      "puzzle": {
+        "isGreenCardSource": false,
+        "isBlueCardSource": false,
+        "isRedCardSource": true,
+        "requiresGreenCard": false,
+        "requiresBlueCard": true,
+        "requiresRedCard": false,
+        "estimatedPuzzleValue": 76
+      }
+    },
+    {
+      "name": "Power Plant",
+      "aliases": ["Powerplant"],
+      "tier": "medium_high",
+      "hasRecycler": true,
+      "hasRefinery": true,
+      "hasResearchTable": true,
+      "lootValue": 80,
+      "trafficRisk": 78,
+      "puzzle": {
+        "isGreenCardSource": false,
+        "isBlueCardSource": false,
+        "isRedCardSource": true,
+        "requiresGreenCard": false,
+        "requiresBlueCard": true,
+        "requiresRedCard": false,
+        "estimatedPuzzleValue": 80
+      }
+    },
+    {
+      "name": "Launch Site",
+      "aliases": ["Launch"],
+      "tier": "high",
+      "hasRecycler": true,
+      "hasRefinery": true,
+      "hasResearchTable": true,
+      "lootValue": 96,
+      "trafficRisk": 92,
+      "puzzle": {
+        "isGreenCardSource": false,
+        "isBlueCardSource": false,
+        "isRedCardSource": false,
+        "requiresGreenCard": false,
+        "requiresBlueCard": false,
+        "requiresRedCard": true,
+        "estimatedPuzzleValue": 96
+      }
+    },
+    {
+      "name": "Military Tunnels",
+      "aliases": ["Military Tunnel", "Mil Tuns"],
+      "tier": "high",
+      "hasRecycler": false,
+      "hasRefinery": false,
+      "hasResearchTable": false,
+      "lootValue": 94,
+      "trafficRisk": 90,
+      "puzzle": {
+        "isGreenCardSource": false,
+        "isBlueCardSource": false,
+        "isRedCardSource": false,
+        "requiresGreenCard": false,
+        "requiresBlueCard": false,
+        "requiresRedCard": true,
+        "estimatedPuzzleValue": 94
+      }
+    },
+    {
+      "name": "Airfield",
+      "aliases": ["Air Field"],
+      "tier": "medium_high",
+      "hasRecycler": true,
+      "hasRefinery": true,
+      "hasResearchTable": true,
+      "lootValue": 74,
+      "trafficRisk": 72,
+      "puzzle": {
+        "isGreenCardSource": false,
+        "isBlueCardSource": false,
+        "isRedCardSource": true,
+        "requiresGreenCard": false,
+        "requiresBlueCard": true,
+        "requiresRedCard": false,
+        "estimatedPuzzleValue": 74
+      }
+    }
+  ]
+}
