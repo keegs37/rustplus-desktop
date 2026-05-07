@@ -44,7 +44,7 @@ public partial class MainWindow
             }
 
             BtnRunBuildSpotAdvisor.IsEnabled = false;
-            BuildSpotStatusText.Text = "Generating terrain-valid candidates and scoring static map proxies...";
+            BuildSpotStatusText.Text = "Generating candidates and sampling provider terrain/topology layers when available...";
             BuildSpotResultsList.ItemsSource = null;
             ClearBuildSpotMarkers();
 
@@ -56,8 +56,8 @@ public partial class MainWindow
             BuildSpotResultsList.ItemsSource = recommendations.Select(BuildSpotResultCard.FromRecommendation).ToArray();
             RenderBuildSpotMarkers(recommendations);
             BuildSpotStatusText.Text = recommendations.Count == 0
-                ? "No build spots matched the selected constraints. Try Normal flatness or include risky spots."
-                : $"Showing top {recommendations.Count} recommendations. Confidence: medium (live map/monuments loaded; terrain uses MVP static/procedural proxy until provider height/topology layers are integrated).";
+                ? "No build spots matched the selected constraints. If terrain layers are missing, try Normal flatness or include risky spots."
+                : BuildTerrainStatusText(map, recommendations);
         }
         catch (OperationCanceledException)
         {
@@ -117,6 +117,16 @@ public partial class MainWindow
             MapSize = _worldSizeS,
             Monuments = merged
         };
+    }
+
+    private static string BuildTerrainStatusText(RustMapData map, IReadOnlyList<BuildSpotRecommendation> recommendations)
+    {
+        if (map.TerrainData?.HasHeightLayer == true && map.TerrainData.HasBlockingLayers)
+            return $"Showing top {recommendations.Count} recommendations. Confidence: high for terrain (provider height/topology layers sampled); traffic remains static map-proxy only.";
+
+        var missing = recommendations.SelectMany(r => r.Terrain.MissingLayers).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        var missingText = missing.Length == 0 ? "height/topology" : string.Join(", ", missing);
+        return $"Showing top {recommendations.Count} recommendations with limited confidence: provider {missingText} data is missing, so full strict terrain/build-blocking confidence is disabled instead of using procedural terrain.";
     }
 
     private void RenderBuildSpotMarkers(IReadOnlyList<BuildSpotRecommendation> recommendations)
@@ -271,10 +281,13 @@ public partial class MainWindow
             var nearby = r.NearbyMonuments.Count == 0
                 ? "Nearby: none"
                 : "Nearby: " + string.Join(" • ", r.NearbyMonuments.Take(3).Select(m => $"{m.Name} {m.DistanceMeters:0}m ({m.Role})"));
+            var terrainLine = r.Terrain.DataQuality == "terrain_backed"
+                ? $"Terrain: slope {r.Terrain.AverageSlopeDegrees:0.0}° | Δh {r.Terrain.MaxHeightDeltaMeters:0.0}m | biome {r.Terrain.Biome} | topology {string.Join(", ", r.Terrain.TopologyFlags.DefaultIfEmpty("none"))}"
+                : $"Terrain: unknown/limited confidence — missing {string.Join(", ", r.Terrain.MissingLayers.DefaultIfEmpty("height/topology"))}";
             return new BuildSpotResultCard
             {
                 Title = $"#{r.Rank} — {r.Grid} — {r.ModeFit.Replace('_', ' ')} — {r.OverallScore:0}/100",
-                ScoreLine = $"Flat {r.Scores.Flatness:0} | Build {r.Scores.BuildableArea:0} | Loot {r.Scores.LootAccess:0} | Res {r.Scores.ResourceAccess:0} | Safety {r.Scores.Safety:0} | Puzzle {r.Scores.PuzzleAccess:0} | Traffic {r.Scores.TrafficRisk:0} | Raid {r.Scores.RaidRisk:0}",
+                ScoreLine = $"Flat {r.Scores.Flatness:0} | Build {r.Scores.BuildableArea:0} | Loot {r.Scores.LootAccess:0} | Res {r.Scores.ResourceAccess:0} | Safety {r.Scores.Safety:0} | Puzzle {r.Scores.PuzzleAccess:0} | Traffic {r.Scores.TrafficRisk:0} | Raid {r.Scores.RaidRisk:0} | {terrainLine}",
                 NearbyLine = nearby,
                 Summary = r.AiSummary
             };

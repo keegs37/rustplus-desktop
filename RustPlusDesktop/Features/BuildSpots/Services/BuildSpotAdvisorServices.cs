@@ -44,7 +44,7 @@ public sealed class BuildSpotAdvisorService : IBuildSpotAdvisorService
     private readonly BuildSpotExplanationService _explanations;
 
     public BuildSpotAdvisorService(RustMapData map)
-        : this(map, new BuildCandidateGenerator(), new BuildSpotScorer(new PuzzleAccessScorer()), new BuildSpotExplanationService())
+        : this(map, new BuildCandidateGenerator(new MapRasterDecoder()), new BuildSpotScorer(new PuzzleAccessScorer()), new BuildSpotExplanationService())
     {
     }
 
@@ -92,6 +92,7 @@ public sealed class BuildSpotAdvisorService : IBuildSpotAdvisorService
                     ModeFit = BuildSpotPreferencesExtensions.ToWireName(resolvedPreferences.Mode),
                     OverallScore = Math.Round(x.overall, 1),
                     Scores = x.scores,
+                    Terrain = x.candidate.Terrain,
                     PuzzleAccess = x.puzzle,
                     NearbyMonuments = nearby,
                     Pros = pros,
@@ -168,6 +169,18 @@ public static class BuildSpotPreferencesExtensions
 
 public sealed class BuildCandidateGenerator : IBuildCandidateGenerator
 {
+    private readonly MapRasterDecoder _terrainDecoder;
+
+    public BuildCandidateGenerator()
+        : this(new MapRasterDecoder())
+    {
+    }
+
+    public BuildCandidateGenerator(MapRasterDecoder terrainDecoder)
+    {
+        _terrainDecoder = terrainDecoder;
+    }
+
     public IReadOnlyList<BuildCandidate> GenerateCandidates(RustMapData map, BuildSpotPreferences preferences)
     {
         if (map.MapSize <= 0) return Array.Empty<BuildCandidate>();
@@ -196,7 +209,7 @@ public sealed class BuildCandidateGenerator : IBuildCandidateGenerator
                 var nearest = BuildSpotMath.NearestMonuments(new WorldPosition(x, z), map.Monuments, 1).FirstOrDefault();
                 if (nearest.monument != null && nearest.distance < 185) continue;
 
-                var terrain = EstimateTerrain(map.MapSize, x, z, preferences);
+                var terrain = _terrainDecoder.AnalyzeCandidate(map, new WorldPosition(x, z), radius, preferences);
                 if (terrain.IsBuildBlocked) continue;
 
                 candidates.Add(new BuildCandidate
@@ -206,7 +219,7 @@ public sealed class BuildCandidateGenerator : IBuildCandidateGenerator
                     Grid = BuildSpotMath.ToGrid(x, z, map.MapSize),
                     RadiusMeters = radius,
                     Terrain = terrain,
-                    BuildablePatchMeters = Math.Clamp(radius * 2.4 - terrain.MaxHeightDeltaMeters * 5, 20, 150)
+                    BuildablePatchMeters = EstimateBuildablePatchMeters(radius, terrain)
                 });
             }
         }
@@ -214,34 +227,15 @@ public sealed class BuildCandidateGenerator : IBuildCandidateGenerator
         return candidates;
     }
 
-    private static TerrainSummary EstimateTerrain(int mapSize, double x, double z, BuildSpotPreferences preferences)
+    private static double EstimateBuildablePatchMeters(double radius, TerrainSummary terrain)
     {
-        var nx = x / mapSize;
-        var nz = z / mapSize;
-        var slope = Math.Abs(Math.Sin(nx * 19.7) + Math.Cos(nz * 17.3)) * 3.2 + Math.Abs(Math.Sin((nx + nz) * 31.0)) * 2.1;
-        var heightDelta = slope * 0.42 + Math.Abs(Math.Cos(nx * 11.0 - nz * 7.0)) * 1.4;
-        var biome = z > mapSize * 0.66 ? "snow" : x < mapSize * 0.33 ? "forest" : z < mapSize * 0.25 ? "desert" : "temperate";
-        var maxSlope = preferences.FlatnessRequirement switch
-        {
-            FlatnessRequirement.VeryStrict => 3.0,
-            FlatnessRequirement.Strict => 5.0,
-            _ => 8.0
-        };
-        var maxDelta = preferences.FlatnessRequirement switch
-        {
-            FlatnessRequirement.VeryStrict => 1.5,
-            FlatnessRequirement.Strict => 3.0,
-            _ => 5.0
-        };
+        if (terrain.HasBlockingData)
+            return Math.Clamp(radius * 2 * Math.Sqrt(Math.Clamp(terrain.BuildableSampleRatio, 0, 1)), 0, radius * 2);
 
-        return new TerrainSummary
-        {
-            AverageSlopeDegrees = Math.Round(slope, 1),
-            MaxHeightDeltaMeters = Math.Round(heightDelta, 1),
-            Biome = biome,
-            TopologyFlags = biome == "forest" ? new[] { "Field", "Forest" } : new[] { "Field" },
-            IsBuildBlocked = slope > maxSlope || heightDelta > maxDelta
-        };
+        if (!terrain.HasHeightData)
+            return Math.Clamp(radius * 0.65, 15, radius * 2);
+
+        return Math.Clamp(radius * 2.4 - terrain.MaxHeightDeltaMeters * 5, 20, 150);
     }
 }
 
@@ -266,7 +260,8 @@ public sealed class BuildSpotScorer : IBuildSpotScorer
         var mobility = new MobilityScorer().Score(candidate, map, nearest, preferences);
         var preference = new MonumentAccessScorer().PreferenceScore(nearest, preferences);
         LastPuzzleScore = _puzzleAccessScorer.ScorePuzzleAccess(candidate, map, preferences);
-        var safety = Math.Clamp(100 - traffic * 0.68 - raid * 0.32 + (candidate.Terrain.Biome == "forest" ? 8 : 0), 0, 100);
+        var terrainConfidencePenalty = candidate.Terrain.DataQuality == "terrain_unknown" ? 10 : candidate.Terrain.DataQuality == "terrain_partial" ? 5 : 0;
+        var safety = Math.Clamp(100 - traffic * 0.68 - raid * 0.32 + (candidate.Terrain.Biome == "forest" ? 8 : 0) - terrainConfidencePenalty, 0, 100);
 
         return new BuildSpotScores
         {
@@ -298,10 +293,21 @@ public sealed class TerrainScorer
 {
     public (double flatness, double buildable) Score(BuildCandidate candidate, BuildSpotPreferences preferences)
     {
+        if (!candidate.Terrain.HasHeightData)
+        {
+            var unknownArea = candidate.Terrain.HasBlockingData
+                ? Math.Clamp(candidate.Terrain.BuildableSampleRatio * 55, 0, 55)
+                : 35;
+            return (45, Math.Round(unknownArea));
+        }
+
         var clutterPenalty = candidate.Terrain.TopologyFlags.Contains("Forest") ? 4 : 0;
-        var flatness = 100 - Math.Clamp(candidate.Terrain.AverageSlopeDegrees * 8, 0, 45) - Math.Clamp(candidate.Terrain.MaxHeightDeltaMeters * 6, 0, 35) - clutterPenalty;
-        var area = Math.Clamp(candidate.BuildablePatchMeters / (preferences.Mode == BuildSpotMode.ClanHighTraffic ? 115 : 85) * 100, 0, 100);
-        return (Math.Round(Math.Clamp(flatness, 0, 100)), Math.Round(area));
+        var blockingPenalty = candidate.Terrain.TopologyFlags.Any(MapRasterDecoder.IsBlockingTopologyFlag) ? 45 : 0;
+        var flatness = 100 - Math.Clamp(candidate.Terrain.AverageSlopeDegrees * 8, 0, 45) - Math.Clamp(candidate.Terrain.MaxHeightDeltaMeters * 6, 0, 35) - clutterPenalty - blockingPenalty;
+        var area = candidate.Terrain.HasBlockingData
+            ? candidate.Terrain.BuildableSampleRatio * 100
+            : Math.Clamp(candidate.BuildablePatchMeters / (preferences.Mode == BuildSpotMode.ClanHighTraffic ? 115 : 85) * 100, 0, 100) * 0.7;
+        return (Math.Round(Math.Clamp(flatness, 0, 100)), Math.Round(Math.Clamp(area, 0, 100)));
     }
 }
 
@@ -453,7 +459,12 @@ public sealed class BuildSpotExplanationService
         var nearest = nearby.FirstOrDefault()?.Name ?? "nearby monuments";
         var puzzleText = puzzle.OverallPuzzleScore >= 70 ? "strong card progression" : puzzle.OverallPuzzleScore >= 40 ? "workable but incomplete card progression" : "limited card progression";
         var riskText = scores.TrafficRisk >= 65 ? "high static traffic-risk proxies" : scores.TrafficRisk >= 35 ? "moderate static traffic-risk proxies" : "low static traffic-risk proxies";
-        return $"Fits {mode} with {scores.Flatness:0}/100 flatness, {scores.BuildableArea:0}/100 build room, {puzzleText}, and {riskText}. Nearest useful landmark: {nearest}. This uses static map and monument data only; it does not claim live enemy or hidden-base locations.";
+        var terrainText = candidate.Terrain.DataQuality == "terrain_backed"
+            ? $"terrain-backed slope {candidate.Terrain.AverageSlopeDegrees:0.0}° / height delta {candidate.Terrain.MaxHeightDeltaMeters:0.0}m"
+            : candidate.Terrain.DataQuality == "terrain_partial"
+                ? $"limited terrain confidence; missing {string.Join(", ", candidate.Terrain.MissingLayers)} layer data"
+                : "terrain unknown because provider height/topology layers are missing";
+        return $"Fits {mode} with {scores.Flatness:0}/100 flatness, {scores.BuildableArea:0}/100 build room, {puzzleText}, {riskText}, and {terrainText}. Nearest useful landmark: {nearest}. This uses static map and monument data only; it does not claim live enemy or hidden-base locations.";
     }
 
     public IEnumerable<string> BuildPros(BuildSpotScores scores, PuzzleAccessScore puzzle, IReadOnlyList<NearbyMonument> nearby, BuildSpotMode mode)
@@ -471,7 +482,7 @@ public sealed class BuildSpotExplanationService
     {
         if (scores.TrafficRisk >= 60) yield return "Likely higher traffic because of nearby static objectives/routes";
         if (scores.RaidRisk >= 55) yield return "Higher raid attention risk from visibility, resources, or high-value proximity";
-        if (scores.Flatness < 65) yield return "Terrain may require a smaller or more careful footprint";
+        if (scores.Flatness < 65) yield return "Terrain may require a smaller footprint, or provider terrain data is incomplete";
         if (puzzle.OverallPuzzleScore < 40) yield return "Puzzle-card progression is weak from this location";
         if (mode == BuildSpotMode.SoloStealth && nearby.Any(n => n.Role.Contains("red", StringComparison.OrdinalIgnoreCase))) yield return "May be hotter than ideal for solo stealth due to red-card progression nearby";
     }
@@ -629,7 +640,7 @@ public static class MonumentPuzzleMetadataLoader
 
 public sealed class ActiveMapResolverService
 {
-    public RustMapData? ResolveFromCurrentMap(string serverId, string serverName, int mapSize, IReadOnlyList<MapMonument> monuments, int? mapSeed = null, string? wipeId = null)
+    public RustMapData? ResolveFromCurrentMap(string serverId, string serverName, int mapSize, IReadOnlyList<MapMonument> monuments, int? mapSeed = null, string? wipeId = null, RustMapTerrainData? terrainData = null)
     {
         if (mapSize <= 0) return null;
         return new RustMapData
@@ -639,7 +650,8 @@ public sealed class ActiveMapResolverService
             MapSeed = mapSeed,
             MapSize = mapSize,
             WipeId = wipeId,
-            Monuments = monuments
+            Monuments = monuments,
+            TerrainData = terrainData
         };
     }
 
@@ -651,7 +663,7 @@ public sealed class MapProviderClient : IMapProviderClient
 {
     public Task<RustMapData?> FindMapAsync(int seed, int size, CancellationToken ct)
     {
-        // MVP abstraction point: wire this to RustMaps or a compatible structured provider when API credentials/config are available.
+        // Provider integration point: populate RustMapData.TerrainData with height, topology, biome, and blocking rasters from an authorized structured map provider when API credentials/config are available.
         return Task.FromResult<RustMapData?>(null);
     }
 }
