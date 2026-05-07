@@ -2019,6 +2019,14 @@ Click="BtnToggleMiniMap_Click"/>
                         <Image Source="pack://application:,,,/Assets/icons/pencil.png"/>
                     </Button>
 
+                    <Button x:Name="BtnToggleBuildSpots"
+                            Content="Build Spots"
+                            Margin="8,0,0,0"
+                            Padding="12,6"
+                            ToolTip="Map → Build Spots: static map-planning recommendations"
+                            Style="{StaticResource GhostButton}"
+                            Click="BtnToggleBuildSpots_Click"/>
+
                     <!-- StackPanel with Heli Demo removed -->
                     <StackPanel Orientation="Horizontal" Margin="12,0,0,0">
                     </StackPanel>
@@ -2072,6 +2080,135 @@ Click="BtnToggleMiniMap_Click"/>
                                 HorizontalAlignment="Right" 
                                 Margin="15" 
                                 Panel.ZIndex="100"/>
+
+                    <Border x:Name="BuildSpotAdvisorPanel"
+                            Visibility="Collapsed"
+                            Width="390"
+                            MaxHeight="660"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Margin="16,56,16,16"
+                            Background="#EE171A21"
+                            BorderBrush="#664FC3F7"
+                            BorderThickness="1"
+                            CornerRadius="14"
+                            Panel.ZIndex="1200">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <DockPanel Margin="14,12,14,8">
+                                <Button Content="✕" DockPanel.Dock="Right" Width="28" Height="28" Style="{StaticResource GhostButton}" Click="BtnCloseBuildSpots_Click"/>
+                                <StackPanel>
+                                    <TextBlock Text="Smart Build Spot Advisor" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                    <TextBlock Text="Static map planning only — no enemy/player detection." Foreground="{DynamicResource TextSubtle}" FontSize="11" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="14,0,14,14">
+                                <StackPanel>
+                                    <UniformGrid Columns="2" Margin="0,0,0,8">
+                                        <StackPanel Margin="0,0,6,6">
+                                            <TextBlock Text="Mode" Foreground="{DynamicResource TextSubtle}" FontSize="11"/>
+                                            <ComboBox x:Name="BuildSpotModeCombo" SelectedIndex="0">
+                                                <ComboBoxItem Content="Auto Recommend" Tag="Auto"/>
+                                                <ComboBoxItem Content="Solo Stealth" Tag="SoloStealth"/>
+                                                <ComboBoxItem Content="Duo Balanced" Tag="DuoBalanced"/>
+                                                <ComboBoxItem Content="Starter Base" Tag="StarterBase"/>
+                                                <ComboBoxItem Content="Farm Base" Tag="FarmBase"/>
+                                                <ComboBoxItem Content="Monument Rush" Tag="MonumentRush"/>
+                                                <ComboBoxItem Content="Clan / High-Traffic" Tag="ClanHighTraffic"/>
+                                                <ComboBoxItem Content="Low-Pop / Hidden" Tag="LowPopHidden"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Margin="6,0,0,6">
+                                            <TextBlock Text="Team size" Foreground="{DynamicResource TextSubtle}" FontSize="11"/>
+                                            <ComboBox x:Name="BuildSpotTeamCombo" SelectedIndex="1">
+                                                <ComboBoxItem Content="Solo" Tag="1"/>
+                                                <ComboBoxItem Content="Duo" Tag="2"/>
+                                                <ComboBoxItem Content="Trio" Tag="3"/>
+                                                <ComboBoxItem Content="4+" Tag="4"/>
+                                                <ComboBoxItem Content="Clan" Tag="8"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,6,6">
+                                            <TextBlock Text="Loot priority" Foreground="{DynamicResource TextSubtle}" FontSize="11"/>
+                                            <ComboBox x:Name="BuildSpotLootCombo" SelectedIndex="1">
+                                                <ComboBoxItem Content="Low" Tag="Low"/>
+                                                <ComboBoxItem Content="Medium" Tag="Medium"/>
+                                                <ComboBoxItem Content="High" Tag="High"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Margin="6,0,0,6">
+                                            <TextBlock Text="Safety priority" Foreground="{DynamicResource TextSubtle}" FontSize="11"/>
+                                            <ComboBox x:Name="BuildSpotSafetyCombo" SelectedIndex="1">
+                                                <ComboBoxItem Content="Low" Tag="Low"/>
+                                                <ComboBoxItem Content="Medium" Tag="Medium"/>
+                                                <ComboBoxItem Content="High" Tag="High"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,6,6">
+                                            <TextBlock Text="Flatness" Foreground="{DynamicResource TextSubtle}" FontSize="11"/>
+                                            <ComboBox x:Name="BuildSpotFlatnessCombo" SelectedIndex="0">
+                                                <ComboBoxItem Content="Normal" Tag="Normal"/>
+                                                <ComboBoxItem Content="Strict" Tag="Strict"/>
+                                                <ComboBoxItem Content="Very Strict" Tag="VeryStrict"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Margin="6,0,0,6">
+                                            <TextBlock Text="Resource" Foreground="{DynamicResource TextSubtle}" FontSize="11"/>
+                                            <ComboBox x:Name="BuildSpotResourceCombo" SelectedIndex="4">
+                                                <ComboBoxItem Content="Wood" Tag="Wood"/>
+                                                <ComboBoxItem Content="Stone" Tag="Stone"/>
+                                                <ComboBoxItem Content="Metal" Tag="Metal"/>
+                                                <ComboBoxItem Content="Sulfur" Tag="Sulfur"/>
+                                                <ComboBoxItem Content="Balanced" Tag="Balanced"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,6,6">
+                                            <TextBlock Text="Puzzle access" Foreground="{DynamicResource TextSubtle}" FontSize="11"/>
+                                            <ComboBox x:Name="BuildSpotPuzzleCombo" SelectedIndex="0">
+                                                <ComboBoxItem Content="Auto" Tag="Auto"/>
+                                                <ComboBoxItem Content="Ignore" Tag="Ignore"/>
+                                                <ComboBoxItem Content="Prefer Green" Tag="PreferGreen"/>
+                                                <ComboBoxItem Content="Prefer Blue" Tag="PreferBlue"/>
+                                                <ComboBoxItem Content="Prefer Red" Tag="PreferRed"/>
+                                                <ComboBoxItem Content="Full Progression" Tag="PreferFullProgression"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Margin="6,0,0,6">
+                                            <TextBlock Text="Results" Foreground="{DynamicResource TextSubtle}" FontSize="11"/>
+                                            <ComboBox x:Name="BuildSpotResultsCombo" SelectedIndex="1">
+                                                <ComboBoxItem Content="Top 5" Tag="5"/>
+                                                <ComboBoxItem Content="Top 10" Tag="10"/>
+                                                <ComboBoxItem Content="Top 25" Tag="25"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </UniformGrid>
+                                    <CheckBox x:Name="BuildSpotRiskyCheck" Content="Include risky/high-reward spots" Style="{StaticResource DotCheckBox}" Margin="0,2"/>
+                                    <CheckBox x:Name="BuildSpotRecyclerCheck" Content="Prefer recycler route" Style="{StaticResource DotCheckBox}" Margin="0,2" IsChecked="True"/>
+                                    <CheckBox x:Name="BuildSpotAvoidPuzzleTrafficCheck" Content="Avoid high-traffic puzzle monuments" Style="{StaticResource DotCheckBox}" Margin="0,2" IsChecked="True"/>
+                                    <Button x:Name="BtnRunBuildSpotAdvisor" Content="Analyze Build Spots" Style="{StaticResource PrimaryButton}" Margin="0,10,0,8" Click="BtnRunBuildSpotAdvisor_Click"/>
+                                    <TextBlock x:Name="BuildSpotStatusText" Text="Open Map → Build Spots after connecting to a server map." Foreground="{DynamicResource TextSubtle}" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,8"/>
+                                    <ItemsControl x:Name="BuildSpotResultsList">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#AA23272E" BorderBrush="#334FC3F7" BorderThickness="1" CornerRadius="10" Padding="10" Margin="0,0,0,8">
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Title}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                        <TextBlock Text="{Binding ScoreLine}" Foreground="{DynamicResource TextSubtle}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                                        <TextBlock Text="{Binding NearbyLine}" Foreground="#DDECEFF1" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                                        <TextBlock Text="{Binding Summary}" Foreground="#DDECEFF1" FontSize="12" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Text="Build Spot Advisor uses static map data, selected preferences, and optional app-owned signals only. It does not read game memory, detect enemy players, or reveal hidden bases." Foreground="{DynamicResource TextSubtle}" FontSize="10" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
 
                     <Canvas x:Name="GridLayer" IsHitTestVisible="False"/>
                     <Canvas x:Name="Overlay"   IsHitTestVisible="True"/>
